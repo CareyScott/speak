@@ -59,7 +59,9 @@ final class WaveView: NSView {
 final class Overlay: NSObject, AVAudioPlayerDelegate {
     private let panel: NSPanel
     private let wave = WaveView()
+    private let backButton = NSButton()
     private let pauseButton = NSButton()
+    private let skipButton = NSButton()
     private var player: AVAudioPlayer?
     private var currentIndex = 0
     private var holdPaused = false
@@ -93,19 +95,18 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
         content.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.92).cgColor
         root.addSubview(content)
 
-        let back = makeButton(symbol: "backward.end.fill", action: #selector(backPressed))
-        pauseButton.target = self
-        pauseButton.action = #selector(pausePressed)
-        styleButton(pauseButton, symbol: "pause.fill")
-        let skip = makeButton(symbol: "forward.end.fill", action: #selector(skipPressed))
+        configureButton(backButton, symbol: "backward.end.fill", action: #selector(backPressed))
+        configureButton(pauseButton, symbol: "pause.fill", action: #selector(pausePressed))
+        configureButton(skipButton, symbol: "forward.end.fill", action: #selector(skipPressed))
         let stop = makeButton(symbol: "xmark", action: #selector(stopPressed))
 
-        back.frame = NSRect(x: 12, y: 12, width: 28, height: 28)
+        backButton.frame = NSRect(x: 12, y: 12, width: 28, height: 28)
         wave.frame = NSRect(x: 48, y: 14, width: 100, height: 24)
-        skip.frame = NSRect(x: 156, y: 12, width: 28, height: 28)
+        skipButton.frame = NSRect(x: 156, y: 12, width: 28, height: 28)
         pauseButton.frame = NSRect(x: 196, y: 12, width: 28, height: 28)
         stop.frame = NSRect(x: 236, y: 12, width: 28, height: 28)
-        [back, wave, skip, pauseButton, stop].forEach { content.addSubview($0) }
+        [backButton, wave, skipButton, pauseButton, stop].forEach { content.addSubview($0) }
+        setPlaybackControls(enabled: false)
 
         if let screen = NSScreen.main {
             let frame = screen.visibleFrame
@@ -115,10 +116,21 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
 
     private func makeButton(symbol: String, action: Selector) -> NSButton {
         let button = NSButton()
+        configureButton(button, symbol: symbol, action: action)
+        return button
+    }
+
+    private func configureButton(_ button: NSButton, symbol: String, action: Selector) {
         button.target = self
         button.action = action
         styleButton(button, symbol: symbol)
-        return button
+    }
+
+    private func setPlaybackControls(enabled: Bool) {
+        for button in [backButton, pauseButton, skipButton] {
+            button.isEnabled = enabled
+            button.alphaValue = enabled ? 1 : 0.35
+        }
     }
 
     private func styleButton(_ button: NSButton, symbol: String) {
@@ -133,6 +145,7 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
         switch command.type {
         case "loading":
             show()
+            setPlaybackControls(enabled: false)
             startLoading()
         case "play":
             guard let path = command.path, let index = command.index else { return }
@@ -159,6 +172,7 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
         next.prepareToPlay()
         player = next
         show()
+        setPlaybackControls(enabled: true)
         if holdPaused { return }
         next.play()
         startMetering()
