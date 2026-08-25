@@ -73,6 +73,7 @@ export class OverlayPlayer implements Speaker {
       let index = 0;
       while (index < sentences.length && !controller.signal.aborted) {
         prefetchFrom(index + 1);
+        this.send({ type: "loading" });
         const path = await fileFor(index);
         if (controller.signal.aborted) break;
         const outcome = await this.playSentence(path, index, sentences.length, controller.signal);

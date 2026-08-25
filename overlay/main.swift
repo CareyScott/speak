@@ -64,6 +64,8 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
     private var currentIndex = 0
     private var holdPaused = false
     private var meterTimer: Timer?
+    private var loadingTimer: Timer?
+    private var loadingTick: CGFloat = 0
 
     override init() {
         let size = NSSize(width: 276, height: 52)
@@ -129,6 +131,9 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
 
     func handle(_ command: Command) {
         switch command.type {
+        case "loading":
+            show()
+            startLoading()
         case "play":
             guard let path = command.path, let index = command.index else { return }
             play(path: path, index: index)
@@ -175,6 +180,7 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
     }
 
     private func stopPlayback() {
+        stopLoading()
         player?.stop()
         player = nil
         holdPaused = false
@@ -195,8 +201,23 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
         styleButton(pauseButton, symbol: paused ? "play.fill" : "pause.fill")
     }
 
+    private func startLoading() {
+        if meterTimer != nil || loadingTimer != nil { return }
+        loadingTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            self.loadingTick += 0.09
+            self.wave.push(0.22 + 0.14 * sin(self.loadingTick))
+        }
+    }
+
+    private func stopLoading() {
+        loadingTimer?.invalidate()
+        loadingTimer = nil
+    }
+
     private func startMetering() {
         stopMetering()
+        stopLoading()
         meterTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
             guard let self, let player = self.player else { return }
             player.updateMeters()
