@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+FLAG="${SPEAK_AUTO_FLAG:-$HOME/.config/speak/auto}"
+
+case "${1:-status}" in
+  on)
+    mkdir -p "$(dirname "$FLAG")"
+    printf '%s\n' "${2:-brief}" > "$FLAG"
+    echo "auto-speak on (style: ${2:-brief})"
+    ;;
+  off)
+    rm -f "$FLAG"
+    echo "auto-speak off"
+    ;;
+  status)
+    if [ -f "$FLAG" ]; then echo "auto-speak on (style: $(cat "$FLAG"))"; else echo "auto-speak off"; fi
+    ;;
+  *)
+    echo "usage: speak-auto [on [simple|brief|decisions|full|eli5] | off | status]" >&2
+    exit 1
+    ;;
+esac
