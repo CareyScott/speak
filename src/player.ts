@@ -58,6 +58,8 @@ export class FilePlayer implements Speaker {
 
   back(): void {}
 
+  skip(): void {}
+
   stop(): boolean {
     if (!this.controller) return false;
     this.controller.abort();

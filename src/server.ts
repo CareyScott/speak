@@ -73,6 +73,15 @@ server.registerTool(
 );
 
 server.registerTool(
+  "skip",
+  { description: "Skip the current sentence and continue with the next one.", inputSchema: {} },
+  async () => {
+    player.skip();
+    return { content: [{ type: "text", text: "Skipped a sentence." }] };
+  },
+);
+
+server.registerTool(
   "add_pronunciation",
   {
     description: "Remember how a word should be spoken. Stored in the user's config and applied to every future reading. Use when the user says something like: pronounce fancyapp as fan-see-app from now on.",

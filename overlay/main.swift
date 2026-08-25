@@ -66,7 +66,7 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
     private var meterTimer: Timer?
 
     override init() {
-        let size = NSSize(width: 236, height: 52)
+        let size = NSSize(width: 276, height: 52)
         panel = NSPanel(contentRect: NSRect(origin: .zero, size: size), styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         super.init()
         panel.level = .screenSaver
@@ -95,13 +95,15 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
         pauseButton.target = self
         pauseButton.action = #selector(pausePressed)
         styleButton(pauseButton, symbol: "pause.fill")
+        let skip = makeButton(symbol: "forward.end.fill", action: #selector(skipPressed))
         let stop = makeButton(symbol: "xmark", action: #selector(stopPressed))
 
         back.frame = NSRect(x: 12, y: 12, width: 28, height: 28)
         wave.frame = NSRect(x: 48, y: 14, width: 100, height: 24)
-        pauseButton.frame = NSRect(x: 156, y: 12, width: 28, height: 28)
-        stop.frame = NSRect(x: 196, y: 12, width: 28, height: 28)
-        [back, wave, pauseButton, stop].forEach { content.addSubview($0) }
+        skip.frame = NSRect(x: 156, y: 12, width: 28, height: 28)
+        pauseButton.frame = NSRect(x: 196, y: 12, width: 28, height: 28)
+        stop.frame = NSRect(x: 236, y: 12, width: 28, height: 28)
+        [back, wave, skip, pauseButton, stop].forEach { content.addSubview($0) }
 
         if let screen = NSScreen.main {
             let frame = screen.visibleFrame
@@ -209,13 +211,21 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
         wave.flatten()
     }
 
-    @objc private func backPressed() {
+    private func jump(_ direction: String) {
         player?.stop()
         player = nil
         stopMetering()
         holdPaused = false
         setPauseIcon(paused: false)
-        send(["type": "back", "index": currentIndex])
+        send(["type": direction, "index": currentIndex])
+    }
+
+    @objc private func backPressed() {
+        jump("back")
+    }
+
+    @objc private func skipPressed() {
+        jump("skip")
     }
 
     @objc private func pausePressed() {

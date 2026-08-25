@@ -10,8 +10,8 @@ import type { Engine } from "./engines/engine.js";
 import type { Speaker } from "./speaker.js";
 import { splitIntoSentences } from "./speech-text.js";
 
-type HelperEvent = { type: "finished" | "back" | "stop" | "paused" | "resumed"; index?: number };
-type Outcome = "finished" | "back" | "stop";
+type HelperEvent = { type: "finished" | "back" | "skip" | "stop" | "paused" | "resumed"; index?: number };
+type Outcome = "finished" | "back" | "skip" | "stop";
 
 export const OVERLAY_BINARY = join(dirname(fileURLToPath(import.meta.url)), "..", "overlay", "SpeakOverlay");
 
@@ -52,6 +52,7 @@ export class OverlayPlayer implements Speaker {
         const outcome = await this.playSentence(path, index, sentences.length, controller.signal);
         if (outcome === "stop") break;
         index = outcome === "back" ? Math.max(0, index - 1) : index + 1;
+        if (outcome === "skip") this.send({ type: "stop" });
       }
     } finally {
       this.send({ type: "idle" });
@@ -80,6 +81,10 @@ export class OverlayPlayer implements Speaker {
 
   back(): void {
     this.waiting?.("back");
+  }
+
+  skip(): void {
+    this.waiting?.("skip");
   }
 
   get isSpeaking(): boolean {
@@ -122,7 +127,7 @@ export class OverlayPlayer implements Speaker {
     } catch {
       return;
     }
-    if (event.type === "finished" || event.type === "back") this.waiting?.(event.type);
+    if (event.type === "finished" || event.type === "back" || event.type === "skip") this.waiting?.(event.type);
     if (event.type === "stop") this.stop();
   }
 }

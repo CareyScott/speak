@@ -8,8 +8,8 @@ Works in Claude Code today. The playback half is a plain MCP server, so it also 
 
 ## What you get
 
-- `speak` MCP server with tools `speak`, `stop`, `pause`, `resume`, `back`, `add_pronunciation`, `list_pronunciations`, `list_voices`, `set_default`
-- Floating overlay on macOS while Claude speaks: a small pill above every window with a live waveform, back one sentence, pause and resume from the exact point, stop
+- `speak` MCP server with tools `speak`, `stop`, `pause`, `resume`, `back`, `skip`, `add_pronunciation`, `list_pronunciations`, `list_voices`, `set_default`
+- Floating overlay on macOS while Claude speaks: a small pill above every window with a live waveform, back one sentence, skip one sentence, pause and resume from the exact point, stop
 - `/speak` skill for Claude Code, with styles: `simple` (default), `brief`, `decisions`, `full`, `eli5`
 - Auto-speak: a `Stop` hook that reads a `brief` script after every answer, off by default
 - `speak` CLI: `echo "hello" | speak`
@@ -90,9 +90,9 @@ speak-auto off
 
 While it speaks, use the overlay or just say it:
 
-- "pause", "resume", "go back a sentence", "stop"
+- "pause", "resume", "go back a sentence", "skip that", "stop"
 
-Pause holds the exact position. Resume continues from it. Back replays the previous sentence. Nothing is spoken about pausing or resuming; it just does it.
+Pause holds the exact position. Resume continues from it. Back replays the previous sentence. Skip jumps to the next. Nothing is spoken about pausing or resuming; it just does it.
 
 Pick an engine or voice:
 
@@ -109,7 +109,7 @@ The skill tells Claude how to write for the ear: short sentences, lead with the 
 
 The server strips any leftover markdown, splits the script into sentences, and synthesises the next sentence while the current one plays.
 
-On macOS a small Swift helper (`overlay/main.swift`) owns playback with `AVAudioPlayer` and draws the overlay: an always-on-top, non-activating panel that never steals focus. Node sends it one sentence file at a time over JSON lines on stdin and it reports `finished`, `back`, or `stop` on stdout. Pause and resume happen inside the helper, so the position is exact. Back tells the server to replay the previous sentence. Elsewhere the server falls back to `afplay` or `ffplay` with no overlay.
+On macOS a small Swift helper (`overlay/main.swift`) owns playback with `AVAudioPlayer` and draws the overlay: an always-on-top, non-activating panel that never steals focus. Node sends it one sentence file at a time over JSON lines on stdin and it reports `finished`, `back`, or `stop` on stdout. Pause and resume happen inside the helper, so the position is exact. Back and skip tell the server which sentence to play next. Elsewhere the server falls back to `afplay` or `ffplay` with no overlay.
 
 Auto-speak is a Claude Code `Stop` hook. When the flag file `~/.config/speak/auto` exists, the hook blocks the stop once and asks Claude to speak a script in the style named in the file. The `stop_hook_active` guard stops it looping.
 

@@ -6,5 +6,6 @@ export interface Speaker {
   pause(): void;
   resume(): void;
   back(): void;
+  skip(): void;
   readonly isSpeaking: boolean;
 }
