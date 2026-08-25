@@ -25,8 +25,6 @@ selected_text() {
 }
 
 read_aloud() {
-  local text
-  text="$(cat)"
   stop_reading
-  node "$SPEAK_CLI" "$text" >/dev/null 2>&1 &
+  node "$SPEAK_CLI" <&0 >/dev/null 2>&1 &
 }

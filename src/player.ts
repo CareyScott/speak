@@ -68,6 +68,8 @@ export class FilePlayer implements Speaker {
     return { chunks: chunks.length };
   }
 
+  showLoading(): void {}
+
   pause(): void {}
 
   resume(): void {}

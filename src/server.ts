@@ -30,6 +30,8 @@ server.registerTool(
     },
   },
   async ({ text, engine, voice, wait }) => {
+    player.stop();
+    player.showLoading();
     const chosen = await resolveEngine(engine ?? defaults.engine);
     const script = applyPronunciations(toSpeechText(text), await loadPronunciations());
     const playback = player.speak(script, chosen, voice ?? defaults.voice);
@@ -51,6 +53,7 @@ server.registerTool(
     },
   },
   async ({ text, engine, voice }) => {
+    player.showLoading();
     const chosen = await resolveEngine(engine ?? defaults.engine);
     const script = applyPronunciations(toSpeechText(text), await loadPronunciations());
     const wasSpeaking = player.isSpeaking;

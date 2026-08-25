@@ -89,6 +89,10 @@ export class OverlayPlayer implements Speaker {
     return { chunks: sentences.length };
   }
 
+  showLoading(): void {
+    if (!this.isSpeaking) this.send({ type: "loading" });
+  }
+
   stop(): boolean {
     if (!this.controller) return false;
     this.controller.abort();
