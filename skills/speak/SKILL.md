@@ -21,7 +21,23 @@ Pick from the argument or the phrasing. Default `simple`.
 
 The voice reads letters, not meaning. Fix that in the script:
 
-- Words with two readings get respelled so the voice cannot pick the wrong one. Keep the word, change the letters: "live" as in alive becomes "lyve", "live" as in to live somewhere becomes "liv"; "read" past tense becomes "red"; "lead" the metal becomes "led"; "close" the verb becomes "cloze"; "record" the verb becomes "ri-CORD"; "wind" the verb becomes "wynd". Spelling tricks beat synonyms: the listener hears the word they expect.
+- Words with two readings get respelled so the voice cannot pick the wrong one. Keep the word, change the letters. Spelling tricks beat synonyms: the listener hears the word they expect. Before calling the tool, search the script for every word in this table and replace it:
+
+  | written | meaning | write instead |
+  |---|---|---|
+  | live | alive, running, on air | lyive |
+  | live | to live somewhere | liv |
+  | read | past tense | red |
+  | lead | the metal | led |
+  | close | the verb, to shut | cloze |
+  | wind | the verb, to turn | wynd |
+  | record | the verb | ri-cord |
+  | minute | tiny | my-newt |
+  | tear | to rip | tair |
+  | bass | the instrument | base |
+  | produce | the verb | pro-dewss |
+
+  "live" is the one that bites most in this work ("the feature is live", "the site is live"): it is always "lyive" unless someone lives somewhere.
 - Brand and product names that are not dictionary words: spell them how they sound the first time, e.g. "fan-see-app" for fancyapp. The user can save these permanently with the `add_pronunciation` tool ("pronounce X as Y from now on"), and saved ones apply automatically, so check `list_pronunciations` if unsure.
 - Acronyms: write them the way people say them. "API" as "ay pee eye", "SQL" as "sequel", "JSON" as "jason", "OAuth" as "oh auth".
 - Links and emails: say them as spoken, "example dot com slash login", "jane at example dot com". Short endings are spelled out, "dot d e", "dot i o", "dot c o dot u k", because "de" read as a word comes out as "duh". The server does this for any that slip through, but writing them spoken keeps the rhythm right.

@@ -50,7 +50,7 @@ They live in `~/.config/speak/pronunciations.json` (override the folder with `SP
 
 Links and emails are read as spoken: `https://example.com/login` becomes "example dot com slash login", `jane@example.de` becomes "jane at example dot d e". Short endings like `de`, `io`, `co.uk` are spelled letter by letter, since "de" read as a word comes out as "duh".
 
-Words with two readings ("live", "read", "lead") cannot be fixed by a word list. The skill tells Claude to respell them in the script so the voice cannot guess wrong: "lyve" for live as in alive, "red" for read in the past tense, "led" for the metal.
+Words with two readings ("live", "read", "lead") cannot be fixed by a word list. The skill tells Claude to respell them in the script so the voice cannot guess wrong: "lyive" for live as in alive, "red" for read in the past tense, "led" for the metal. The skill carries a table of the usual offenders and checks the script against it before speaking.
 
 Leave `SPEAK_VOICE` unset to follow the system voice, or set it to a voice name from `say -v ?` to override for Claude only.
 
