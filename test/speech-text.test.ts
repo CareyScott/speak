@@ -40,3 +40,11 @@ describe("speakUrls", () => {
     expect(toSpeechText("shop.example.de and speak.io and bbc.co.uk")).toBe("shop dot example dot d e and speak dot i o and bbc dot c o dot u k");
   });
 });
+
+describe("respellLive", () => {
+  it("respells live as in running, leaves the verb alone", () => {
+    expect(toSpeechText("The feature is live. It went live today. Live traffic. People who live here. We live in Dublin. It lives in config.")).toBe(
+      "The feature is lyive. It went lyive today. Lyive traffic. People who live here. We live in Dublin. It lives in config.",
+    );
+  });
+});

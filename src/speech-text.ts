@@ -47,6 +47,17 @@ function tableRowToSentence(row: string): string {
   return `${cells.join(", ")}.`;
 }
 
+const LIVE_AS_VERB = /\b(to|i|we|you|they|people|users|who)\s+live\b/i;
+const LIVE = /\blive\b/gi;
+
+export function respellLive(text: string): string {
+  return text.replace(LIVE, (word, offset: number) => {
+    const before = text.slice(Math.max(0, offset - 12), offset + word.length);
+    if (LIVE_AS_VERB.test(before)) return word;
+    return word[0] === "L" ? "Lyive" : "lyive";
+  });
+}
+
 export function toSpeechText(markdown: string): string {
   return markdown
     .replace(CODE_BLOCK, "\n\nCode block omitted.\n\n")
@@ -63,6 +74,7 @@ export function toSpeechText(markdown: string): string {
     .replace(MULTI_BLANK, "\n\n")
     .split("\n")
     .map(speakUrls)
+    .map(respellLive)
     .join("\n")
     .trim();
 }
