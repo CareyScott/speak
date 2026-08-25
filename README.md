@@ -13,7 +13,7 @@ Works in Claude Code today. The playback half is a plain MCP server, so it also 
 - `/speak` skill for Claude Code, with styles: `simple` (default), `brief`, `decisions`, `full`, `eli5`
 - Auto-speak: a `Stop` hook that reads a `brief` script after every answer, off by default
 - `speak` CLI: `echo "hello" | speak`
-- Raycast script commands: `Speak` reads the selected text as written, `Speak Simply` rewrites it with `claude -p` as a short spoken summary first, `Speak Translated` translates it first (English by default; type another language as the command's argument, or set `SPEAK_TRANSLATE_LANGUAGE` to change the default), `Speak Stop` stops. They copy the selection with a simulated Cmd+C, so Raycast needs Accessibility permission.
+- Raycast script commands: `Speak` reads the selected text as written, `Speak Simply` rewrites it with `claude -p` as a short spoken summary first, `Speak Translated` translates it first (English by default; type another language as the command's argument, or set `SPEAK_TRANSLATE_LANGUAGE` to change the default). A non-English translation is read with a matching installed macOS voice, best available first (Premium, then Enhanced, then compact); English keeps your normal voice untouched. Download the Premium voice for a language in System Settings > Accessibility > Read & Speak > System Voice > Manage Voices to get the good one. `Speak Stop` stops. They copy the selection with a simulated Cmd+C, so Raycast needs Accessibility permission.
 
 ## Engines
 

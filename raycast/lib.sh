@@ -24,7 +24,68 @@ selected_text() {
   printf '%s' "$text"
 }
 
+language_code() {
+  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
+    german|deutsch) echo de ;;
+    french|français) echo fr ;;
+    spanish|español) echo es ;;
+    italian|italiano) echo it ;;
+    dutch|nederlands) echo nl ;;
+    portuguese|português) echo pt ;;
+    swedish|svenska) echo sv ;;
+    danish|dansk) echo da ;;
+    norwegian|norsk) echo nb ;;
+    finnish|suomi) echo fi ;;
+    polish|polski) echo pl ;;
+    *) echo "" ;;
+  esac
+}
+
+preferred_voices() {
+  case "$1" in
+    de) echo "Anna (Premium)|Petra (Premium)|Markus (Enhanced)|Viktor (Enhanced)|Helena (Enhanced)|Anna" ;;
+    fr) echo "Amélie (Premium)|Thomas (Enhanced)|Audrey (Enhanced)|Aurélie (Enhanced)|Thomas" ;;
+    es) echo "Mónica (Premium)|Jorge (Enhanced)|Paulina (Enhanced)|Marisol (Enhanced)|Mónica" ;;
+    it) echo "Alice (Premium)|Luca (Enhanced)|Federica (Enhanced)|Alice" ;;
+    nl) echo "Xander (Enhanced)|Claire (Enhanced)|Xander" ;;
+    pt) echo "Joana (Premium)|Luciana (Enhanced)|Joana" ;;
+    sv) echo "Alva (Premium)|Klara (Enhanced)|Alva" ;;
+    da) echo "Sara (Premium)|Magnus (Enhanced)|Sara" ;;
+    nb) echo "Nora (Premium)|Henrik (Enhanced)|Nora" ;;
+    fi) echo "Satu (Enhanced)|Satu" ;;
+    pl) echo "Zosia (Premium)|Krzysztof (Enhanced)|Zosia" ;;
+    *) echo "" ;;
+  esac
+}
+
+voice_for_language() {
+  local code installed candidate
+  code="$(language_code "$1")"
+  [ -n "$code" ] || return 0
+  installed="$(say -v '?' | awk -v code="$code" '{ line=$0; sub(/ +[a-z]{2}_[A-Z]{2} +#.*$/, "", line); if ($0 ~ " " code "_") print line }')"
+  IFS='|' read -ra shortlist <<< "$(preferred_voices "$code")"
+  for candidate in "${shortlist[@]}"; do
+    if printf '%s\n' "$installed" | grep -qxF "$candidate"; then printf '%s' "$candidate"; return 0; fi
+  done
+  for tier in "(Premium)" "(Enhanced)"; do
+    candidate="$(printf '%s\n' "$installed" | grep -F "$tier" | head -1)"
+    if [ -n "$candidate" ]; then printf '%s' "$candidate"; return 0; fi
+  done
+  printf '%s\n' "$installed" | grep -v '(' | head -1
+}
+
 read_aloud() {
   stop_reading
   node "$SPEAK_CLI" <&0 >/dev/null 2>&1 &
+}
+
+read_aloud_in() {
+  local voice
+  voice="$(voice_for_language "$1")"
+  stop_reading
+  if [ -n "$voice" ]; then
+    SPEAK_VOICE="$voice" node "$SPEAK_CLI" <&0 >/dev/null 2>&1 &
+  else
+    node "$SPEAK_CLI" <&0 >/dev/null 2>&1 &
+  fi
 }
