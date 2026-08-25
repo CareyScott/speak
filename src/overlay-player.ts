@@ -22,6 +22,7 @@ export function overlayAvailable(): boolean {
 export class OverlayPlayer implements Speaker {
   private helper: ChildProcessByStdio<Writable, Readable, null> | undefined;
   private waiting: ((outcome: Outcome) => void) | undefined;
+  private pendingOutcome: Outcome | undefined;
   private controller: AbortController | undefined;
 
   async speak(text: string, engine: Engine, voice: string | undefined): Promise<{ chunks: number }> {
@@ -46,13 +47,14 @@ export class OverlayPlayer implements Speaker {
     try {
       let index = 0;
       while (index < sentences.length && !controller.signal.aborted) {
-        if (index + 1 < sentences.length) void fileFor(index + 1).catch(() => undefined);
+        for (const ahead of [index + 1, index + 2]) {
+          if (ahead < sentences.length) void fileFor(ahead).catch(() => undefined);
+        }
         const path = await fileFor(index);
         if (controller.signal.aborted) break;
         const outcome = await this.playSentence(path, index, sentences.length, controller.signal);
         if (outcome === "stop") break;
         index = outcome === "back" ? Math.max(0, index - 1) : index + 1;
-        if (outcome === "skip") this.send({ type: "stop" });
       }
     } finally {
       this.send({ type: "idle" });
@@ -66,6 +68,7 @@ export class OverlayPlayer implements Speaker {
     if (!this.controller) return false;
     this.controller.abort();
     this.controller = undefined;
+    this.pendingOutcome = undefined;
     this.send({ type: "stop" });
     this.waiting?.("stop");
     return true;
@@ -80,11 +83,16 @@ export class OverlayPlayer implements Speaker {
   }
 
   back(): void {
-    this.waiting?.("back");
+    this.deliver("back");
   }
 
   skip(): void {
-    this.waiting?.("skip");
+    this.deliver("skip");
+  }
+
+  private deliver(outcome: Outcome): void {
+    if (this.waiting) this.waiting(outcome);
+    else if (this.isSpeaking) this.pendingOutcome = outcome;
   }
 
   get isSpeaking(): boolean {
@@ -93,6 +101,12 @@ export class OverlayPlayer implements Speaker {
 
   private playSentence(path: string, index: number, total: number, signal: AbortSignal): Promise<Outcome> {
     return new Promise((resolve) => {
+      if (this.pendingOutcome) {
+        const queued = this.pendingOutcome;
+        this.pendingOutcome = undefined;
+        resolve(queued);
+        return;
+      }
       const settle = (outcome: Outcome) => {
         this.waiting = undefined;
         signal.removeEventListener("abort", onAbort);
@@ -127,7 +141,8 @@ export class OverlayPlayer implements Speaker {
     } catch {
       return;
     }
-    if (event.type === "finished" || event.type === "back" || event.type === "skip") this.waiting?.(event.type);
+    if (event.type === "finished") this.waiting?.("finished");
+    if (event.type === "back" || event.type === "skip") this.deliver(event.type);
     if (event.type === "stop") this.stop();
   }
 }
