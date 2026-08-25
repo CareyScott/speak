@@ -50,7 +50,7 @@ Installed.
   Skill:       /speak [simple|brief|decisions|full|eli5]
   Auto-speak:  speak-auto on|off|status   (off by default)
   CLI:         echo "hello" | speak
-  Raycast:     Speak, Speak Simply, Speak Stop ($RAYCAST_NOTE)
+  Raycast:     Speak, Speak Simply, Speak Translated, Speak Stop ($RAYCAST_NOTE)
 
 Restart Claude Code, then try: "read that back to me simply".
 MSG
