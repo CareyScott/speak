@@ -56,7 +56,38 @@ final class WaveView: NSView {
     }
 }
 
-final class Overlay: NSObject, AVAudioPlayerDelegate {
+struct SavedPosition: Codable {
+    let bootTime: Int
+    let x: Double
+    let y: Double
+}
+
+enum PositionStore {
+    static let file: URL = {
+        let base = ProcessInfo.processInfo.environment["SPEAK_CONFIG_DIR"].map { URL(fileURLWithPath: $0) }
+            ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".config/speak")
+        return base.appendingPathComponent("overlay-position.json")
+    }()
+
+    static var bootTime: Int {
+        Int((Date().timeIntervalSince1970 - ProcessInfo.processInfo.systemUptime).rounded())
+    }
+
+    static func load() -> NSPoint? {
+        guard let data = try? Data(contentsOf: file), let saved = try? JSONDecoder().decode(SavedPosition.self, from: data) else { return nil }
+        guard abs(saved.bootTime - bootTime) < 5 else { return nil }
+        return NSPoint(x: saved.x, y: saved.y)
+    }
+
+    static func save(_ origin: NSPoint) {
+        let saved = SavedPosition(bootTime: bootTime, x: origin.x, y: origin.y)
+        guard let data = try? JSONEncoder().encode(saved) else { return }
+        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? data.write(to: file)
+    }
+}
+
+final class Overlay: NSObject, AVAudioPlayerDelegate, NSWindowDelegate {
     private let panel: NSPanel
     private let wave = WaveView()
     private let backButton = NSButton()
@@ -108,10 +139,17 @@ final class Overlay: NSObject, AVAudioPlayerDelegate {
         [backButton, wave, skipButton, pauseButton, stop].forEach { content.addSubview($0) }
         setPlaybackControls(enabled: false)
 
-        if let screen = NSScreen.main {
+        if let saved = PositionStore.load(), NSScreen.screens.contains(where: { $0.visibleFrame.intersects(NSRect(origin: saved, size: size)) }) {
+            panel.setFrameOrigin(saved)
+        } else if let screen = NSScreen.main {
             let frame = screen.visibleFrame
             panel.setFrameOrigin(NSPoint(x: frame.midX - size.width / 2, y: frame.minY + 24))
         }
+        panel.delegate = self
+    }
+
+    func windowDidMove(_ notification: Notification) {
+        PositionStore.save(panel.frame.origin)
     }
 
     private func makeButton(symbol: String, action: Selector) -> NSButton {
