@@ -24,6 +24,16 @@ mkdir -p "$HOME/.local/bin"
 ln -sf "$ROOT/hooks/speak-auto" "$HOME/.local/bin/speak-auto"
 ln -sf "$ROOT/dist/cli.js" "$HOME/.local/bin/speak"
 
+if [ -n "${RAYCAST_SCRIPTS_DIR:-}" ]; then
+  mkdir -p "$RAYCAST_SCRIPTS_DIR"
+  for script in "$ROOT"/raycast/speak-*.sh; do
+    ln -sf "$script" "$RAYCAST_SCRIPTS_DIR/$(basename "$script")"
+  done
+  RAYCAST_NOTE="linked into $RAYCAST_SCRIPTS_DIR"
+else
+  RAYCAST_NOTE="add $ROOT/raycast as a Script Directory in Raycast (Settings > Extensions > Script Commands), or rerun with RAYCAST_SCRIPTS_DIR=<dir>"
+fi
+
 SETTINGS="$CLAUDE_DIR/settings.json"
 [ -f "$SETTINGS" ] || echo '{}' > "$SETTINGS"
 HOOK_CMD="$ROOT/hooks/auto-speak.sh"
@@ -40,6 +50,7 @@ Installed.
   Skill:       /speak [simple|brief|decisions|full|eli5]
   Auto-speak:  speak-auto on|off|status   (off by default)
   CLI:         echo "hello" | speak
+  Raycast:     Speak, Speak Simply, Speak Stop ($RAYCAST_NOTE)
 
 Restart Claude Code, then try: "read that back to me simply".
 MSG

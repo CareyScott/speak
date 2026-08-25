@@ -13,6 +13,7 @@ Works in Claude Code today. The playback half is a plain MCP server, so it also 
 - `/speak` skill for Claude Code, with styles: `simple` (default), `brief`, `decisions`, `full`, `eli5`
 - Auto-speak: a `Stop` hook that reads a `brief` script after every answer, off by default
 - `speak` CLI: `echo "hello" | speak`
+- Raycast script commands: `Speak` reads the selected text as written, `Speak Simply` rewrites it with `claude -p` as a short spoken summary first, `Speak Stop` stops. They copy the selection with a simulated Cmd+C, so Raycast needs Accessibility permission.
 
 ## Engines
 
@@ -57,6 +58,12 @@ Leave `SPEAK_VOICE` unset to follow the system voice, or set it to a voice name 
 First available engine wins unless you set `SPEAK_ENGINE`. `SPEAK_VOICE` sets the voice. Both can be changed per session with the `set_default` tool ("switch to the edge engine").
 
 ## Install
+
+Set `RAYCAST_SCRIPTS_DIR` to a directory already added in Raycast (Settings > Extensions > Script Commands) and the commands are linked into it. Without it, add `raycast/` from this repo there once by hand.
+
+```sh
+RAYCAST_SCRIPTS_DIR=~/raycast-scripts ./install.sh
+```
 
 Needs Node 20+, `jq`, and Claude Code.
 
