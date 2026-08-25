@@ -52,9 +52,15 @@ The voice reads letters, not meaning. Fix that in the script:
 - End with the ask if there is one: "I need you to decide X. I recommend Y."
 - Irish English spelling. No em dashes.
 
+## Speak in chunks, always
+
+Never write the whole script and then call a tool. Load `mcp__speak__enqueue` and `mcp__speak__speak` together in one `ToolSearch` call (`select:mcp__speak__enqueue,mcp__speak__speak`) if they are not loaded yet. Then call `enqueue` with the first sentence alone, before writing anything else. Continue with `enqueue` calls of two to four whole sentences each, sent as soon as written. The first call starts playback; later calls append. Chunk boundaries are sentence ends only. Apply the respelling table and pronunciation rules to every chunk. Use `speak` only when the reading must interrupt whatever is playing.
+
+This applies to reading an existing answer back as much as to writing something new: do not draft the full script first.
+
 ## Steps
 
 1. Work out what to speak: the last assistant message unless the user names something else (a file, a diff, a paragraph).
-2. Write the script for the chosen style. Keep it in your head, not in the reply.
-3. Call `speak` with `text` set to the script. Pass `engine` or `voice` only if the user asked.
+2. Send the first sentence with `enqueue` straight away, then the rest in chunks. Do not print the script in the reply. Pass `engine` or `voice` only if the user asked.
+3. Do not plan or rewrite the whole script before the first call. One sentence, send, next chunk.
 4. Reply with one line: "Speaking." Nothing else. If the user asked to stop, call `stop`.

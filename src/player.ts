@@ -28,12 +28,28 @@ async function playFile(path: string, signal: AbortSignal): Promise<void> {
 
 export class FilePlayer implements Speaker {
   private controller: AbortController | undefined;
+  private queue: string[] = [];
 
   async speak(text: string, engine: Engine, voice: string | undefined): Promise<{ chunks: number }> {
     this.stop();
+    this.queue = splitIntoChunks(text);
+    return this.drain(engine, voice);
+  }
+
+  async enqueue(text: string, engine: Engine, voice: string | undefined): Promise<{ chunks: number }> {
+    const chunks = splitIntoChunks(text);
+    if (this.isSpeaking) {
+      this.queue.push(...chunks);
+      return { chunks: chunks.length };
+    }
+    this.queue = chunks;
+    return this.drain(engine, voice);
+  }
+
+  private async drain(engine: Engine, voice: string | undefined): Promise<{ chunks: number }> {
     const controller = new AbortController();
     this.controller = controller;
-    const chunks = splitIntoChunks(text);
+    const chunks = this.queue;
     const dir = await mkdtemp(join(tmpdir(), "speak-play-"));
     try {
       let next = engine.synthesize(chunks[0], voice, controller.signal);
@@ -46,8 +62,8 @@ export class FilePlayer implements Speaker {
         await playFile(path, controller.signal);
       }
     } finally {
-      await rm(dir, { recursive: true, force: true });
       if (this.controller === controller) this.controller = undefined;
+      await rm(dir, { recursive: true, force: true });
     }
     return { chunks: chunks.length };
   }
@@ -64,6 +80,7 @@ export class FilePlayer implements Speaker {
     if (!this.controller) return false;
     this.controller.abort();
     this.controller = undefined;
+    this.queue = [];
     return true;
   }
 

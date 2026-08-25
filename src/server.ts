@@ -40,6 +40,27 @@ server.registerTool(
 );
 
 server.registerTool(
+  "enqueue",
+  {
+    description:
+      "Append text to the current reading instead of interrupting it. Use for reading as you write: call once per few sentences, and playback starts on the first call while later calls keep it going. Starts a new reading if nothing is playing.",
+    inputSchema: {
+      text: z.string().min(1).describe("Spoken script fragment, whole sentences only"),
+      engine: z.enum(ENGINE_NAMES as [string, ...string[]]).optional().describe("TTS engine, defaults to SPEAK_ENGINE or first available"),
+      voice: z.string().optional().describe("Voice name for the engine, defaults to SPEAK_VOICE or engine default"),
+    },
+  },
+  async ({ text, engine, voice }) => {
+    const chosen = await resolveEngine(engine ?? defaults.engine);
+    const script = applyPronunciations(toSpeechText(text), await loadPronunciations());
+    const wasSpeaking = player.isSpeaking;
+    const playback = player.enqueue(script, chosen, voice ?? defaults.voice);
+    playback.catch((error) => console.error("enqueue failed:", error));
+    return { content: [{ type: "text", text: wasSpeaking ? "Queued." : `Speaking with ${chosen.name}.` }] };
+  },
+);
+
+server.registerTool(
   "stop",
   { description: "Stop whatever is currently being read aloud.", inputSchema: {} },
   async () => ({ content: [{ type: "text", text: player.stop() ? "Stopped." : "Nothing was playing." }] }),

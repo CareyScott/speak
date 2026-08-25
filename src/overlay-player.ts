@@ -24,12 +24,31 @@ export class OverlayPlayer implements Speaker {
   private waiting: ((outcome: Outcome) => void) | undefined;
   private pendingOutcome: Outcome | undefined;
   private controller: AbortController | undefined;
+  private queue: string[] = [];
+  private prefetch: ((index: number) => void) | undefined;
 
   async speak(text: string, engine: Engine, voice: string | undefined): Promise<{ chunks: number }> {
     this.stop();
+    this.queue = splitIntoSentences(text);
+    return this.drain(engine, voice);
+  }
+
+  async enqueue(text: string, engine: Engine, voice: string | undefined): Promise<{ chunks: number }> {
+    const sentences = splitIntoSentences(text);
+    if (this.isSpeaking) {
+      const first = this.queue.length;
+      this.queue.push(...sentences);
+      this.prefetch?.(first);
+      return { chunks: sentences.length };
+    }
+    this.queue = sentences;
+    return this.drain(engine, voice);
+  }
+
+  private async drain(engine: Engine, voice: string | undefined): Promise<{ chunks: number }> {
     const controller = new AbortController();
     this.controller = controller;
-    const sentences = splitIntoSentences(text);
+    const sentences = this.queue;
     const dir = await mkdtemp(join(tmpdir(), "speak-overlay-"));
     const files = new Map<number, Promise<string>>();
     const fileFor = (index: number) => {
@@ -44,12 +63,16 @@ export class OverlayPlayer implements Speaker {
       }
       return file;
     };
+    const prefetchFrom = (index: number) => {
+      for (const ahead of [index, index + 1]) {
+        if (ahead < sentences.length) void fileFor(ahead).catch(() => undefined);
+      }
+    };
+    this.prefetch = prefetchFrom;
     try {
       let index = 0;
       while (index < sentences.length && !controller.signal.aborted) {
-        for (const ahead of [index + 1, index + 2]) {
-          if (ahead < sentences.length) void fileFor(ahead).catch(() => undefined);
-        }
+        prefetchFrom(index + 1);
         const path = await fileFor(index);
         if (controller.signal.aborted) break;
         const outcome = await this.playSentence(path, index, sentences.length, controller.signal);
@@ -57,9 +80,10 @@ export class OverlayPlayer implements Speaker {
         index = outcome === "back" ? Math.max(0, index - 1) : index + 1;
       }
     } finally {
+      if (this.controller === controller) this.controller = undefined;
+      this.prefetch = undefined;
       this.send({ type: "idle" });
       await rm(dir, { recursive: true, force: true });
-      if (this.controller === controller) this.controller = undefined;
     }
     return { chunks: sentences.length };
   }
@@ -68,6 +92,7 @@ export class OverlayPlayer implements Speaker {
     if (!this.controller) return false;
     this.controller.abort();
     this.controller = undefined;
+    this.queue = [];
     this.pendingOutcome = undefined;
     this.send({ type: "stop" });
     this.waiting?.("stop");
