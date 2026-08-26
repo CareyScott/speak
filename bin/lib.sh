@@ -97,13 +97,18 @@ read_aloud() {
   node "$SPEAK_CLI" <&0 >/dev/null 2>&1 &
 }
 
-read_aloud_in() {
+read_aloud_streaming() {
+  stop_reading
+  node "$SPEAK_CLI" --stream <&0 >/dev/null 2>&1 &
+}
+
+read_aloud_streaming_in() {
   local voice
   voice="$(voice_for_language "$1")"
   stop_reading
   if [ -n "$voice" ]; then
-    SPEAK_VOICE="$voice" node "$SPEAK_CLI" <&0 >/dev/null 2>&1 &
+    SPEAK_VOICE="$voice" node "$SPEAK_CLI" --stream <&0 >/dev/null 2>&1 &
   else
-    node "$SPEAK_CLI" <&0 >/dev/null 2>&1 &
+    node "$SPEAK_CLI" --stream <&0 >/dev/null 2>&1 &
   fi
 }
