@@ -10,22 +10,32 @@ stop_reading() {
 }
 
 input_text() {
-  if [ ! -t 0 ]; then
-    cat
+  local piped=""
+  if [ -p /dev/stdin ] || [ -f /dev/stdin ]; then
+    piped="$(cat)"
+  fi
+  if [ -n "$piped" ]; then
+    printf '%s' "$piped"
     return 0
   fi
   selected_text
 }
 
 selected_text() {
-  local saved
+  local saved sentinel text attempts
   saved="$(pbpaste 2>/dev/null || true)"
+  sentinel="speak-selection-sentinel-$$"
+  printf '%s' "$sentinel" | pbcopy
   osascript -e 'tell application "System Events" to keystroke "c" using command down' >/dev/null
-  sleep 0.15
-  local text
-  text="$(pbpaste)"
+  text="$sentinel"
+  attempts=0
+  while [ "$text" = "$sentinel" ] && [ "$attempts" -lt 30 ]; do
+    sleep 0.05
+    text="$(pbpaste 2>/dev/null || true)"
+    attempts=$((attempts + 1))
+  done
   printf '%s' "$saved" | pbcopy
-  if [ -z "$text" ] || [ "$text" = "$saved" ]; then
+  if [ "$text" = "$sentinel" ] || [ -z "$text" ]; then
     echo "Nothing selected." >&2
     exit 1
   fi
