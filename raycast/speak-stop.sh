@@ -7,6 +7,4 @@
 # @raycast.icon ⏹️
 # @raycast.description Stop the current reading
 
-source "$(dirname "$(readlink -f "$0")")/lib.sh"
-
-stop_reading
+exec "$(dirname "$(readlink -f "$0")")/../bin/speak-stop"

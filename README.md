@@ -13,7 +13,9 @@ Works in Claude Code today. The playback half is a plain MCP server, so it also 
 - `/speak` skill for Claude Code, with styles: `simple` (default), `brief`, `decisions`, `full`, `eli5`
 - Auto-speak: a `Stop` hook that reads a `brief` script after every answer, off by default
 - `speak` CLI: `echo "hello" | speak`
-- Raycast script commands: `Speak` reads the selected text as written, `Speak Simply` rewrites it with `claude -p` as a short spoken summary first, `Speak Translated` translates it first (English by default; type another language as the command's argument, or set `SPEAK_TRANSLATE_LANGUAGE` to change the default). A non-English translation is read with a matching installed macOS voice, best available first (Premium, then Enhanced, then compact); English keeps your normal voice untouched. Download the Premium voice for a language in System Settings > Accessibility > Read & Speak > System Voice > Manage Voices to get the good one. `Speak Stop` stops. They copy the selection with a simulated Cmd+C, so Raycast needs Accessibility permission.
+- Commands for the selected text, usable from any launcher or hotkey tool: `speak-selection` reads it as written, `speak-simply` rewrites it with `claude -p` as a short spoken summary first, `speak-translated [language]` translates it first (English by default, or set `SPEAK_TRANSLATE_LANGUAGE`; a non-English translation is read with the best installed macOS voice for that language, English keeps your normal voice), `speak-stop` stops. Text on stdin is used when piped, otherwise the selection is copied with a simulated Cmd+C, which needs Accessibility permission for the calling app.
+- macOS Quick Actions with the same four commands: right-click selected text > Services, or the app's Services menu. They receive the selection natively, so no Accessibility permission. Assign a hotkey once in System Settings > Keyboard > Keyboard Shortcuts > Services > Text.
+- Raycast script commands wrapping the same four: Speak, Speak Simply, Speak Translated, Speak Stop.
 
 ## Engines
 

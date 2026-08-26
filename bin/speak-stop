@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+source "$(dirname "$(readlink -f "$0")")/lib.sh"
+
+stop_reading

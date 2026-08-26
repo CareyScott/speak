@@ -9,6 +9,14 @@ stop_reading() {
   pkill -f "$SPEAK_CLI" 2>/dev/null || true
 }
 
+input_text() {
+  if [ ! -t 0 ]; then
+    cat
+    return 0
+  fi
+  selected_text
+}
+
 selected_text() {
   local saved
   saved="$(pbpaste 2>/dev/null || true)"

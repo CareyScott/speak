@@ -7,6 +7,4 @@
 # @raycast.icon 🔊
 # @raycast.description Read the selected text aloud as written
 
-source "$(dirname "$(readlink -f "$0")")/lib.sh"
-
-selected_text | read_aloud
+exec "$(dirname "$(readlink -f "$0")")/../bin/speak-selection"
