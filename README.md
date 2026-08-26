@@ -1,73 +1,23 @@
 # speak
 
-Ask Claude to read its answer out loud.
+Have Claude read to you.
 
-Not a text-to-speech dump of the raw reply. You say "read that back to me simply" and Claude rewrites what it said as a short spoken script, then plays it. The script never appears in chat. It is a conversation between you and the model, with the text kept out of your way.
+Ask Claude Code to "read that back to me" and it rewrites its answer as a short spoken script and plays it. You hear it, you never see it. Select text in any app and a right-click, hotkey or Raycast command reads it aloud, summarises it first, or translates it first. Playback starts on the first sentence while the rest is still being written.
 
-Works in Claude Code today. The playback half is a plain MCP server, so it also drops into Claude Desktop, Cursor, or any MCP client.
+The playback half is a plain MCP server, so it also works from Claude Desktop, Cursor, or any other MCP client.
 
 ## What you get
 
-- `speak` MCP server with tools `speak`, `stop`, `pause`, `resume`, `back`, `skip`, `add_pronunciation`, `list_pronunciations`, `list_voices`, `set_default`
-- Floating overlay on macOS while Claude speaks: a small pill above every window with a live waveform, back one sentence, skip one sentence, pause and resume from the exact point, stop
-- `/speak` skill for Claude Code, with styles: `simple` (default), `brief`, `decisions`, `full`, `eli5`
-- Auto-speak: a `Stop` hook that reads a `brief` script after every answer, off by default
-- `speak` CLI: `echo "hello" | speak`. With `--stream`, sentences are read as they arrive on stdin, so a slow producer such as a model is heard as it writes.
-- Commands for the selected text, usable from any launcher or hotkey tool: `speak-selection` reads it as written, `speak-simply` rewrites it with `claude -p` as a short spoken summary and starts reading while Claude is still writing, `speak-translated [language]` translates it first (English by default, or set `SPEAK_TRANSLATE_LANGUAGE`; a non-English translation is read with the best installed macOS voice for that language, English keeps your normal voice), `speak-stop` stops. Text on stdin is used when piped, otherwise the selection is copied with a simulated Cmd+C, which needs Accessibility permission for the calling app.
-- macOS Quick Actions with the same four commands: right-click selected text > Services, or the app's Services menu. They receive the selection natively, so no Accessibility permission. Assign a hotkey once in System Settings > Keyboard > Keyboard Shortcuts > Services > Text.
-- Raycast script commands wrapping the same four: Speak, Speak Simply, Speak Translated, Speak Stop.
-
-## Engines
-
-| Engine | Cost | Needs | Notes |
-|---|---|---|---|
-| `say` | free | macOS | Default. Download a Premium or Enhanced voice in System Settings > Accessibility > Spoken Content for good quality. Set a Siri voice as system default and bare `say` uses it. |
-| `edge` | free | network | Microsoft neural voices via `edge-tts-universal`. Very good quality. Unofficial API. |
-| `kokoro` | free | `npm i kokoro-js`, ~300MB model on first run | Local neural TTS, runs on CPU. |
-| `openai` | paid | `OPENAI_API_KEY` | `gpt-4o-mini-tts`. |
-| `elevenlabs` | free tier | `ELEVENLABS_API_KEY` | `eleven_flash_v2_5`. |
-
-### Picking a voice on macOS
-
-The default `say` engine uses your Mac's system voice, so set it up once in macOS and every reading uses it:
-
-1. Open System Settings > Accessibility > Read & Speak (Spoken Content on older versions).
-2. Under System Voice, pick a voice. Apple ships a large library per language; the Premium and Enhanced ones download on demand and sound far better than the compact defaults. Siri voices can be chosen here too.
-3. Set the speaking rate to taste.
-
-### Pronunciations
-
-Tell Claude in chat:
-
-- "pronounce fancyapp as fan-see-app from now on"
-- "what pronunciations have you saved"
-
-They live in `~/.config/speak/pronunciations.json` (override the folder with `SPEAK_CONFIG_DIR`), matched whole-word and case-insensitive, and applied to every reading:
-
-```json
-{
-  "fancyapp": "fan-see-app",
-  "OAuth": "oh auth"
-}
-```
-
-Links and emails are read as spoken: `https://example.com/login` becomes "example dot com slash login", `jane@example.de` becomes "jane at example dot d e". Short endings like `de`, `io`, `co.uk` are spelled letter by letter, since "de" read as a word comes out as "duh".
-
-Words with two readings ("live", "read", "lead") cannot be fixed by a word list. The skill tells Claude to respell them in the script so the voice cannot guess wrong: "lyive" for live as in alive, "red" for read in the past tense, "led" for the metal. The skill carries a table of the usual offenders and checks the script against it before speaking.
-
-Leave `SPEAK_VOICE` unset to follow the system voice, or set it to a voice name from `say -v ?` to override for Claude only.
-
-First available engine wins unless you set `SPEAK_ENGINE`. `SPEAK_VOICE` sets the voice. Both can be changed per session with the `set_default` tool ("switch to the edge engine").
+- MCP server `speak` with tools `speak`, `enqueue`, `stop`, `pause`, `resume`, `back`, `skip`, `add_pronunciation`, `list_pronunciations`, `list_voices`, `set_default`
+- A floating pill on macOS while it reads: live waveform, back a sentence, pause and resume from the exact spot, skip, stop. It pulses while audio is loading and remembers where you dragged it until the next reboot.
+- `/speak` skill for Claude Code with styles `simple` (default), `brief`, `decisions`, `full`, `eli5`
+- Auto-speak: a `Stop` hook that reads a short summary after every answer, off by default
+- Four commands for the selected text: `speak-selection`, `speak-simply`, `speak-translated`, `speak-stop`. Available as macOS Quick Actions (right-click > Services), Raycast script commands, and plain shell commands for any launcher.
+- `speak` CLI: `echo "hello" | speak`, or `speak --stream` to read sentences as they arrive on stdin
 
 ## Install
 
-Set `RAYCAST_SCRIPTS_DIR` to a directory already added in Raycast (Settings > Extensions > Script Commands) and the commands are linked into it. Without it, add `raycast/` from this repo there once by hand.
-
-```sh
-RAYCAST_SCRIPTS_DIR=~/raycast-scripts ./install.sh
-```
-
-Needs Node 20+, `jq`, and Claude Code.
+Needs macOS or Linux, Node 20+, `jq`, and Claude Code. The overlay needs `swiftc` from the Xcode command line tools.
 
 ```sh
 git clone https://github.com/CareyScott/speak
@@ -75,19 +25,33 @@ cd speak
 ./install.sh
 ```
 
-This builds the server and the macOS overlay helper (needs `swiftc` from the Xcode command line tools), registers the MCP server at user scope, links the skill into `~/.claude/skills`, adds the `Stop` hook to `~/.claude/settings.json`, and links `speak` and `speak-auto` into `~/.local/bin`.
+The script builds the server and overlay, registers the MCP server at user scope, links the skill into `~/.claude/skills`, adds the `Stop` hook to `~/.claude/settings.json`, links the commands into `~/.local/bin`, and installs the Quick Actions into `~/Library/Services`.
 
-Restart Claude Code.
+If you use Raycast, point it at a directory Raycast already loads script commands from and the four commands are linked there too:
+
+```sh
+RAYCAST_SCRIPTS_DIR=~/raycast-scripts ./install.sh
+```
+
+Restart Claude Code afterwards.
 
 ## Use
 
-Talk to Claude:
+In Claude Code:
 
 - "read that back to me"
 - "say it simply"
 - "what do you need from me, out loud"
 - "/speak decisions"
-- "stop"
+- "pause", "go back a sentence", "skip that", "stop"
+
+On selected text, in any app:
+
+- Right-click > Services > Speak, Speak Simply, Speak Translated, Speak Stop. Give them hotkeys once in System Settings > Keyboard > Keyboard Shortcuts > Services > Text.
+- Raycast: the same four commands. Speak Translated takes a language as its argument.
+- Any other launcher: call `speak-selection`, `speak-simply`, `speak-translated [language]`, or `speak-stop`. They read stdin when piped and copy the selection otherwise, which needs Accessibility permission for the app that runs them. Quick Actions get the selection natively and need no permission.
+
+Speak Simply and Speak Translated send the text through `claude -p` and start reading as soon as the first sentence comes back. Translation is into English unless you name a language, or set `SPEAK_TRANSLATE_LANGUAGE`. A non-English translation is read with the best installed macOS voice for that language; English keeps whatever voice you normally use.
 
 Auto-speak after every answer:
 
@@ -97,30 +61,37 @@ speak-auto on decisions  # only the questions for you
 speak-auto off
 ```
 
-While it speaks, use the overlay or just say it:
+## Voices and engines
 
-- "pause", "resume", "go back a sentence", "skip that", "stop"
+| Engine | Cost | Needs | Notes |
+|---|---|---|---|
+| `say` | free | macOS | Default. Uses your system voice. |
+| `edge` | free | network | Microsoft neural voices via `edge-tts-universal`. Unofficial API. |
+| `kokoro` | free | `npm i kokoro-js`, ~300MB model | Local neural TTS on CPU. |
+| `openai` | paid | `OPENAI_API_KEY` | `gpt-4o-mini-tts`. |
+| `elevenlabs` | free tier | `ELEVENLABS_API_KEY` | `eleven_flash_v2_5`. |
 
-Pause holds the exact position. Resume continues from it. Back replays the previous sentence. Skip jumps to the next. Nothing is spoken about pausing or resuming; it just does it.
+The first available engine wins unless you set `SPEAK_ENGINE`. `SPEAK_VOICE` picks the voice. Both can be changed for a session in chat: "switch to the edge engine", "use Jamie from now on".
 
-Pick an engine or voice:
+The `say` engine follows your macOS system voice, so set it once in System Settings > Accessibility > Read & Speak. The compact voices are rough; download a Premium or Enhanced one under Manage Voices and it sounds far better. Do the same for any language you translate into.
 
-```sh
-export SPEAK_ENGINE=edge
-export SPEAK_VOICE=en-IE-ConnorNeural
-```
+### Pronunciations
 
-Or in chat: "list the say voices", "use Jamie from now on".
+Tell Claude "pronounce fancyapp as fan-see-app from now on" and it is saved to `~/.config/speak/pronunciations.json` (or `$SPEAK_CONFIG_DIR`), matched whole word, case-insensitive, and applied to every reading.
+
+Links and emails are read as spoken: `https://example.com/login` becomes "example dot com slash login", and short endings like `de` or `io` are spelled letter by letter so "de" does not come out as "duh".
+
+Words with two readings ("live", "read", "lead") cannot be fixed with a word list, so the skill has Claude respell them in the script: "lyive" for live as in alive, "red" for read in the past tense.
 
 ## How it works
 
-The skill tells Claude how to write for the ear: short sentences, lead with the point, describe code instead of reading it, end with the decision it needs from you. Claude calls the `speak` tool with that script.
+The skill tells Claude how to write for the ear: short sentences, lead with the point, describe code rather than read it, end with the decision it needs from you. Claude sends the first sentence with `enqueue` straight away and the rest in small chunks, so audio starts before the script is finished.
 
-The server strips any leftover markdown, splits the script into sentences, and synthesises the next sentence while the current one plays.
+The server strips leftover markdown, splits the text into sentences, and synthesises the next sentence while the current one plays.
 
-On macOS a small Swift helper (`overlay/main.swift`) owns playback with `AVAudioPlayer` and draws the overlay: an always-on-top, non-activating panel that never steals focus. Node sends it one sentence file at a time over JSON lines on stdin and it reports `finished`, `back`, or `stop` on stdout. Pause and resume happen inside the helper, so the position is exact. Back and skip tell the server which sentence to play next. Elsewhere the server falls back to `afplay` or `ffplay` with no overlay.
+On macOS a small Swift helper (`overlay/main.swift`) owns playback with `AVAudioPlayer` and draws the pill as an always-on-top panel that never takes focus. Node sends it one sentence file at a time as JSON lines on stdin; it reports `finished`, `back`, `skip`, or `stop` on stdout. Elsewhere the server falls back to `afplay` or `ffplay` without the overlay.
 
-Auto-speak is a Claude Code `Stop` hook. When the flag file `~/.config/speak/auto` exists, the hook blocks the stop once and asks Claude to speak a script in the style named in the file. The `stop_hook_active` guard stops it looping.
+Auto-speak is a Claude Code `Stop` hook. When `~/.config/speak/auto` exists, the hook blocks the stop once and asks Claude to speak a script in the style named in the file.
 
 ## Development
 
