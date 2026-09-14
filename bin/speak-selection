@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
 source "$(dirname "$(readlink -f "$0")")/lib.sh"
 
-input_text | read_aloud
+text="$(input_text; printf x)"
+text="${text%x}"
+
+printf '%s' "$text" | read_aloud

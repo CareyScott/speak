@@ -3,6 +3,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 CLAUDE_DIR="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+SIGNING_IDENTITY="${SIGNING_IDENTITY:-$(cat "$HOME/.config/local-signing-identity" 2>/dev/null || true)}"
+
+sign() {
+  if [ -n "$SIGNING_IDENTITY" ] && codesign --force --sign "$SIGNING_IDENTITY" "$1" >/dev/null 2>&1; then
+    return 0
+  fi
+  codesign --force --sign - "$1" >/dev/null 2>&1
+}
 
 command -v jq >/dev/null || { echo "jq is required (brew install jq)"; exit 1; }
 
@@ -19,11 +27,12 @@ if [ "$(uname)" = "Darwin" ] && command -v swiftc >/dev/null; then
   cp macos/Settings/Info.plist "$SETTINGS_APP/Contents/Info.plist"
   cp macos/Settings/SpeakSettings.icns "$SETTINGS_APP/Contents/Resources/SpeakSettings.icns"
   swiftc -O -o "$SETTINGS_APP/Contents/MacOS/SpeakSettings" macos/Settings/*.swift macos/Shared/*.swift -framework AppKit -framework SwiftUI -framework Carbon
-  codesign --force --sign - "$SETTINGS_APP" >/dev/null 2>&1
+  sign "$SETTINGS_APP"
   swiftc -O -o build/SpeakHotkeys macos/Hotkeys/*.swift macos/Shared/*.swift -framework AppKit -framework Carbon
+  sign build/SpeakHotkeys
 fi
 
-claude mcp add --scope user speak -- node "$ROOT/dist/server.js"
+claude mcp get speak >/dev/null 2>&1 || claude mcp add --scope user speak -- node "$ROOT/dist/server.js"
 
 mkdir -p "$CLAUDE_DIR/skills"
 ln -sfn "$ROOT/skills/speak" "$CLAUDE_DIR/skills/speak"

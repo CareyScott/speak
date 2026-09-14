@@ -13,16 +13,35 @@ enum HotkeyCommands {
     static func run(_ command: SpeakCommand) {
         DispatchQueue.global(qos: .userInitiated).async {
             waitForModifierRelease()
+            var selection: String?
+            if command.readsSelection {
+                guard let captured = SelectedText.inFrontApp() else {
+                    report("\(command.title): nothing selected, or Accessibility is not allowed for SpeakHotkeys.")
+                    DispatchQueue.main.async { NSSound.beep() }
+                    return
+                }
+                selection = captured
+            }
             let process = Process()
             process.executableURL = speakRoot.appendingPathComponent("bin/\(command.rawValue)")
             let home = FileManager.default.homeDirectoryForCurrentUser.path
             var environment = ProcessInfo.processInfo.environment
             environment["PATH"] = "\(home)/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
             process.environment = environment
-            process.standardInput = FileHandle.nullDevice
+            let input = Pipe()
+            process.standardInput = selection == nil ? FileHandle.nullDevice : input
             process.standardOutput = FileHandle.nullDevice
             process.standardError = FileHandle.nullDevice
-            try? process.run()
+            do {
+                try process.run()
+            } catch {
+                report("\(command.title): could not run bin/\(command.rawValue): \(error.localizedDescription)")
+                return
+            }
+            if let selection {
+                input.fileHandleForWriting.write(Data(selection.utf8))
+                try? input.fileHandleForWriting.close()
+            }
         }
     }
 
@@ -72,6 +91,10 @@ let configuredHotkeys = SpeakSettingsFile.hotkeys
 guard !configuredHotkeys.isEmpty else {
     print("No speak hotkeys in \(SpeakSettingsFile.file.path). Nothing to do.")
     exit(0)
+}
+
+if configuredHotkeys.keys.contains(where: \.readsSelection) && !AccessibilityPermission.isGranted() {
+    report("Accessibility is not allowed for SpeakHotkeys yet, so the selection hotkeys cannot read the selection. Allow it in System Settings > Privacy & Security > Accessibility.")
 }
 
 var pressedEvent = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))

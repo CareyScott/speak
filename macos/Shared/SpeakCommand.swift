@@ -17,6 +17,10 @@ enum SpeakCommand: String, CaseIterable, Identifiable {
         }
     }
 
+    var readsSelection: Bool {
+        self != .stopSpeaking
+    }
+
     var hotkeyIdentifier: UInt32 {
         UInt32(Self.allCases.firstIndex(of: self)! + 1)
     }
