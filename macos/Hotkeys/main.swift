@@ -48,9 +48,14 @@ func register(_ combination: HotkeyCombination, identifier: UInt32) -> EventHotK
 let arguments = Array(CommandLine.arguments.dropFirst())
 
 if arguments.first == "--check" {
-    let text = arguments.dropFirst().joined(separator: " ")
+    let commandID = arguments.dropFirst().first ?? ""
+    let text = arguments.dropFirst(2).joined(separator: " ")
     do {
         let combination = try HotkeyCombination.parse(text)
+        if let conflict = HotkeyConflicts.conflict(for: text, claimedBy: HotkeyConflicts.speakOwner(commandID)) {
+            report(conflict)
+            exit(1)
+        }
         guard let reference = register(combination, identifier: 99) else {
             report("\(text) is already taken by another app. Pick another hotkey.")
             exit(1)

@@ -67,7 +67,7 @@ speak-auto off
 
 On macOS, open Speak Settings with `speak-settings` or the Speak Settings command in Raycast. It sets:
 
-- Hotkeys for Speak Selection, Speak Simply, Speak Translated and Stop Speaking. All optional, none by default.
+- Hotkeys for Speak Selection, Speak Simply, Speak Translated and Stop Speaking. All optional, none by default. A hotkey already used by Claude Code, the Claude desktop quick entry shortcut or Clarify is refused, with the owner named.
 - The engine and voice. `SPEAK_ENGINE` and `SPEAK_VOICE` still win when they are set.
 - The language Speak Translated uses when none is picked.
 - Auto-speak and its style, the same switch as `speak-auto`.

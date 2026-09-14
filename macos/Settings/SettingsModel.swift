@@ -132,15 +132,11 @@ final class SettingsModel: ObservableObject {
             return
         }
         let symbols = HotkeyText.symbols(for: text)
-        if let owner = hotkeys.first(where: { $0.key != command && HotkeyText.symbols(for: $0.value) == symbols })?.key {
-            hotkeyMessage = "\(symbols) is already used for \(owner.title). Pick another."
-            return
-        }
         stopMonitoringKeys()
         savingCommand = command
         hotkeyMessage = "Saving…"
         DispatchQueue.global(qos: .userInitiated).async {
-            let check = self.runSpeakHotkeys(["check", text])
+            let check = self.runSpeakHotkeys(["check", command.rawValue, text])
             if case .succeeded = check { SpeakSettingsFile.setHotkey(text, for: command) }
             let reload = self.runSpeakHotkeys(["reload"])
             DispatchQueue.main.async {

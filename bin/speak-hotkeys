@@ -49,8 +49,7 @@ PLIST
 
 case "${1:-}" in
   check)
-    shift
-    exec "$LISTENER" --check "$*"
+    exec "$LISTENER" --check "${2:-}" "${*:3}"
     ;;
   pause)
     stop_listener
@@ -71,7 +70,7 @@ case "${1:-}" in
     fi
     ;;
   *)
-    echo "usage: speak-hotkeys [check <hotkey> | pause | reload]" >&2
+    echo "usage: speak-hotkeys [check <command> <hotkey> | pause | reload]" >&2
     exit 1
     ;;
 esac
