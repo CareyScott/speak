@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+source "$(dirname "$(readlink -f "$0")")/lib.sh"
+
+LISTENER="$SPEAK_ROOT/build/SpeakHotkeys"
+SETTINGS="${SPEAK_CONFIG_DIR:-$HOME/.config/speak}/settings.json"
+LABEL="com.careyscott.speak.hotkeys"
+AGENT_PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+DOMAIN="gui/$(id -u)"
+
+configured_hotkey_count() {
+  if [ -f "$SETTINGS" ]; then
+    jq '[(.hotkeys // {})[] | select(. != "")] | length' "$SETTINGS"
+  else
+    echo 0
+  fi
+}
+
+stop_listener() {
+  launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
+}
+
+start_listener() {
+  mkdir -p "$(dirname "$AGENT_PLIST")" "$HOME/Library/Logs"
+  cat > "$AGENT_PLIST" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>$LABEL</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>$LISTENER</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>StandardErrorPath</key>
+	<string>$HOME/Library/Logs/speak-hotkeys.log</string>
+</dict>
+</plist>
+PLIST
+  launchctl bootstrap "$DOMAIN" "$AGENT_PLIST"
+}
+
+case "${1:-}" in
+  check)
+    shift
+    exec "$LISTENER" --check "$*"
+    ;;
+  pause)
+    stop_listener
+    ;;
+  reload)
+    stop_listener
+    if [ "$(configured_hotkey_count)" -gt 0 ]; then
+      start_listener
+    else
+      rm -f "$AGENT_PLIST"
+    fi
+    ;;
+  "")
+    if [ -f "$SETTINGS" ] && [ "$(configured_hotkey_count)" -gt 0 ]; then
+      jq -r '(.hotkeys // {}) | to_entries[] | select(.value != "") | "\(.key): \(.value)"' "$SETTINGS"
+    else
+      echo "No speak hotkeys set. Open Speak Settings to add one."
+    fi
+    ;;
+  *)
+    echo "usage: speak-hotkeys [check <hotkey> | pause | reload]" >&2
+    exit 1
+    ;;
+esac

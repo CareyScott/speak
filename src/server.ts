@@ -8,12 +8,12 @@ import { OverlayPlayer, overlayAvailable } from "./overlay-player.js";
 import type { Speaker } from "./speaker.js";
 import { toSpeechText } from "./speech-text.js";
 import { applyPronunciations, loadPronunciations, PRONUNCIATIONS_FILE, savePronunciation } from "./pronunciations.js";
+import { defaultEngine, defaultVoice, loadSettings } from "./settings.js";
 
 const player: Speaker = overlayAvailable() ? new OverlayPlayer() : new FilePlayer();
-const defaults = {
-  engine: process.env.SPEAK_ENGINE,
-  voice: process.env.SPEAK_VOICE,
-};
+const sessionDefaults: { engine?: string; voice?: string } = {};
+const configuredEngine = () => sessionDefaults.engine ?? defaultEngine(loadSettings());
+const configuredVoice = () => sessionDefaults.voice ?? defaultVoice(loadSettings());
 
 const server = new McpServer({ name: "speak", version: "0.1.0" });
 
@@ -24,20 +24,20 @@ server.registerTool(
       "Read text aloud through the speakers. Pass a spoken script, not raw markdown: plain sentences, no code, no headings. Interrupts anything already playing.",
     inputSchema: {
       text: z.string().min(1).describe("Script to read aloud"),
-      engine: z.enum(ENGINE_NAMES as [string, ...string[]]).optional().describe("TTS engine, defaults to SPEAK_ENGINE or first available"),
-      voice: z.string().optional().describe("Voice name for the engine, defaults to SPEAK_VOICE or engine default"),
+      engine: z.enum(ENGINE_NAMES as [string, ...string[]]).optional().describe("TTS engine, defaults to the session default, then SPEAK_ENGINE, then Speak Settings, then the first available"),
+      voice: z.string().optional().describe("Voice name for the engine, defaults to the session default, then SPEAK_VOICE, then Speak Settings, then the engine default"),
       wait: z.boolean().optional().describe("Wait for playback to finish before returning. Default false."),
     },
   },
   async ({ text, engine, voice, wait }) => {
     player.stop();
     player.showLoading();
-    const chosen = await resolveEngine(engine ?? defaults.engine);
+    const chosen = await resolveEngine(engine ?? configuredEngine());
     const script = applyPronunciations(toSpeechText(text), await loadPronunciations());
-    const playback = player.speak(script, chosen, voice ?? defaults.voice);
+    const playback = player.speak(script, chosen, voice ?? configuredVoice());
     playback.catch((error) => console.error("speak failed:", error));
     if (wait) await playback;
-    return { content: [{ type: "text", text: `Speaking with ${chosen.name}${voice ?? defaults.voice ? ` (${voice ?? defaults.voice})` : ""}.` }] };
+    return { content: [{ type: "text", text: `Speaking with ${chosen.name}${voice ?? configuredVoice() ? ` (${voice ?? configuredVoice()})` : ""}.` }] };
   },
 );
 
@@ -48,16 +48,16 @@ server.registerTool(
       "Append text to the current reading instead of interrupting it. Use for reading as you write: call once per few sentences, and playback starts on the first call while later calls keep it going. Starts a new reading if nothing is playing.",
     inputSchema: {
       text: z.string().min(1).describe("Spoken script fragment, whole sentences only"),
-      engine: z.enum(ENGINE_NAMES as [string, ...string[]]).optional().describe("TTS engine, defaults to SPEAK_ENGINE or first available"),
-      voice: z.string().optional().describe("Voice name for the engine, defaults to SPEAK_VOICE or engine default"),
+      engine: z.enum(ENGINE_NAMES as [string, ...string[]]).optional().describe("TTS engine, defaults to the session default, then SPEAK_ENGINE, then Speak Settings, then the first available"),
+      voice: z.string().optional().describe("Voice name for the engine, defaults to the session default, then SPEAK_VOICE, then Speak Settings, then the engine default"),
     },
   },
   async ({ text, engine, voice }) => {
     player.showLoading();
-    const chosen = await resolveEngine(engine ?? defaults.engine);
+    const chosen = await resolveEngine(engine ?? configuredEngine());
     const script = applyPronunciations(toSpeechText(text), await loadPronunciations());
     const wasSpeaking = player.isSpeaking;
-    const playback = player.enqueue(script, chosen, voice ?? defaults.voice);
+    const playback = player.enqueue(script, chosen, voice ?? configuredVoice());
     playback.catch((error) => console.error("enqueue failed:", error));
     return { content: [{ type: "text", text: wasSpeaking ? "Queued." : `Speaking with ${chosen.name}.` }] };
   },
@@ -154,9 +154,9 @@ server.registerTool(
     inputSchema: { engine: z.enum(ENGINE_NAMES as [string, ...string[]]).optional(), voice: z.string().optional() },
   },
   async ({ engine, voice }) => {
-    if (engine) defaults.engine = engine;
-    if (voice !== undefined) defaults.voice = voice;
-    return { content: [{ type: "text", text: `Defaults: engine=${defaults.engine ?? "auto"}, voice=${defaults.voice ?? "engine default"}` }] };
+    if (engine) sessionDefaults.engine = engine;
+    if (voice !== undefined) sessionDefaults.voice = voice;
+    return { content: [{ type: "text", text: `Defaults: engine=${configuredEngine() ?? "auto"}, voice=${configuredVoice() ?? "engine default"}` }] };
   },
 );
 

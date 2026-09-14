@@ -5,6 +5,15 @@ export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 SPEAK_ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 SPEAK_CLI="$SPEAK_ROOT/dist/cli.js"
 
+translate_language() {
+  local settings="${SPEAK_CONFIG_DIR:-$HOME/.config/speak}/settings.json"
+  local saved=""
+  if [ -f "$settings" ]; then
+    saved="$(jq -r '.translateLanguage // empty' "$settings")"
+  fi
+  printf '%s' "${1:-${SPEAK_TRANSLATE_LANGUAGE:-${saved:-English}}}"
+}
+
 stop_reading() {
   pkill -f "$SPEAK_CLI" 2>/dev/null || true
 }

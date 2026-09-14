@@ -5,15 +5,17 @@ import { FilePlayer } from "./player.js";
 import { OverlayPlayer, overlayAvailable } from "./overlay-player.js";
 import { splitIntoSentences, toSpeechText } from "./speech-text.js";
 import { applyPronunciations, loadPronunciations, type Pronunciations } from "./pronunciations.js";
+import { defaultEngine, defaultVoice, loadSettings } from "./settings.js";
 
 const [, , ...args] = process.argv;
 const streaming = args.includes("--stream");
 const words = args.filter((arg) => arg !== "--stream");
 const player = overlayAvailable() ? new OverlayPlayer() : new FilePlayer();
 player.showLoading();
-const engine = await resolveEngine(process.env.SPEAK_ENGINE);
+const settings = loadSettings();
+const engine = await resolveEngine(defaultEngine(settings));
 const pronunciations = await loadPronunciations();
-const voice = process.env.SPEAK_VOICE;
+const voice = defaultVoice(settings);
 
 const prepare = (text: string, saved: Pronunciations) => applyPronunciations(toSpeechText(text), saved);
 

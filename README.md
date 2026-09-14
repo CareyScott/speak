@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="speak icon"></p>
+
 # speak
 
 Have Claude read to you.
@@ -48,7 +50,7 @@ In Claude Code:
 On selected text, in any app:
 
 - Right-click > Services > Speak, Speak Simply, Speak Translated, Speak Stop. Give them hotkeys once in System Settings > Keyboard > Keyboard Shortcuts > Services > Text.
-- Raycast: the same four commands. Speak Translated takes a language as its argument.
+- Raycast: Speak Selection, Speak Simply, Speak Translated and Stop Speaking. Speak Translated has a language dropdown. Each shows a short confirmation when it starts.
 - Any other launcher: call `speak-selection`, `speak-simply`, `speak-translated [language]`, or `speak-stop`. They read stdin when piped and copy the selection otherwise, which needs Accessibility permission for the app that runs them. Quick Actions get the selection natively and need no permission.
 
 Speak Simply and Speak Translated send the text through `claude -p` and start reading as soon as the first sentence comes back. Translation is into English unless you name a language, or set `SPEAK_TRANSLATE_LANGUAGE`. A non-English translation is read with the best installed macOS voice for that language; English keeps whatever voice you normally use.
@@ -60,6 +62,17 @@ speak-auto on            # brief style
 speak-auto on decisions  # only the questions for you
 speak-auto off
 ```
+
+## Settings
+
+On macOS, open Speak Settings with `speak-settings` or the Speak Settings command in Raycast. It sets:
+
+- Hotkeys for Speak Selection, Speak Simply, Speak Translated and Stop Speaking. All optional, none by default.
+- The engine and voice. `SPEAK_ENGINE` and `SPEAK_VOICE` still win when they are set.
+- The language Speak Translated uses when none is picked.
+- Auto-speak and its style, the same switch as `speak-auto`.
+
+Everything is saved in `~/.config/speak/settings.json`. Hotkeys run from a small listener, `SpeakHotkeys`, that starts at login only while at least one is set; `speak-hotkeys` lists them. The selection commands copy what is selected, so macOS asks once for Accessibility for SpeakHotkeys.
 
 ## Voices and engines
 
